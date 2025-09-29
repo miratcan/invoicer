@@ -127,6 +127,27 @@
                 console.log(`Unexpected invoice parameters: ${unexpectedParams.join(', ')}`);
             }
 
+            // Warn if commonly required parameters are missing.
+            const requiredParams = [
+                'title',
+                'invoiceNumber',
+                'invoiceDate',
+                'dueDate',
+                'companyName',
+                'companyAddress',
+                'companyPhone',
+                'companyEmail',
+                'clientName',
+                'clientAddress',
+                'clientPhone',
+                'clientEmail',
+                'items'
+            ];
+            const missingRequired = requiredParams.filter((name) => !params.has(name));
+            if (missingRequired.length) {
+                console.warn(`Missing expected invoice parameters: ${missingRequired.join(', ')}`);
+            }
+
             // Populate logo
             const logoUrl = params.get('logoUrl');
             if (logoUrl) {
