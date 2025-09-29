@@ -6,17 +6,19 @@
     <title>Invoice</title>
     <style>
         :root { --main-text: #343a40; --secondary-text: #495057; --border-color: #dee2e6; --bg-light: #f8f9fa; }
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { overflow-x: hidden; }
         body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; background-color: var(--bg-light); }
         .invoice-container { max-width: 800px; margin: 2rem auto; padding: 2.5rem; background-color: white; border: 1px solid var(--border-color); box-shadow: 0 0 15px rgba(0,0,0,0.05); }
-        .invoice-header, .invoice-parties { display: flex; justify-content: space-between; margin-bottom: 2.5rem; }
-        .invoice-header h1 { margin: 0; font-size: 2.2em; color: var(--main-text); }
+        .invoice-header, .invoice-parties { display: flex; justify-content: space-between; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem; }
+        .invoice-header h1 { margin: 0; font-size: 2.2em; color: var(--main-text); word-break: break-word; }
         .company-logo { max-width: 150px; max-height: 150px; }
         .invoice-meta, .company-details, .client-details { line-height: 1.6; font-size: 0.9em; }
         .invoice-meta { text-align: right; }
-        .invoice-meta p, .company-details p, .client-details p { margin: 0; }
+        .invoice-meta p, .company-details p, .client-details p { margin: 0; overflow-wrap: anywhere; }
         strong { color: var(--secondary-text); }
-        .invoice-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; }
-        .invoice-table th, .invoice-table td { border: 1px solid var(--border-color); padding: 0.75rem; text-align: left; }
+        .invoice-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; table-layout: fixed; }
+        .invoice-table th, .invoice-table td { border: 1px solid var(--border-color); padding: 0.75rem; text-align: left; word-break: break-word; }
         .invoice-table thead { background-color: var(--bg-light); font-weight: 600; }
         .invoice-table .text-right { text-align: right; }
         .invoice-totals { display: flex; justify-content: flex-end; }
@@ -25,12 +27,43 @@
         .invoice-totals .total td { font-weight: bold; font-size: 1.2em; border-top: 2px solid var(--main-text); }
         .invoice-footer { margin-top: 2.5rem; text-align: center; color: #868e96; font-size: 0.9em; }
         .print-button { display: block; width: 150px; margin: 2rem auto; padding: 0.75rem; font-size: 1rem; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
+        .builder-toggle { display: block; width: 220px; margin: 0.5rem auto 0; padding: 0.6rem; font-size: 0.95rem; cursor: pointer; background-color: #6c757d; color: white; border: none; border-radius: 5px; }
+        .builder-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 9999; align-items: center; justify-content: center; }
+        .builder { display: block; width: min(900px, calc(100vw - 2rem)); max-height: 90vh; overflow: auto; padding: 1rem; background: #ffffff; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.25); border-radius: 8px; }
+        .builder h2 { margin: 0 0 0.75rem 0; font-size: 1.2rem; color: var(--main-text); }
+        .builder .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.25rem; }
+        .builder .grid label { display: block; font-size: 0.85rem; color: var(--secondary-text); margin-bottom: 0.25rem; }
+        .builder .grid input { width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; }
+        .builder .row { margin-top: 0.75rem; }
+        .builder .items-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 0.5rem; table-layout: fixed; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+        .builder .items-table th, .builder .items-table td { padding: 0.6rem 0.7rem; }
+        .builder .items-table th { background: linear-gradient(180deg, #f9fafb, #f1f3f5); color: var(--secondary-text); font-weight: 600; border-bottom: 1px solid var(--border-color); text-align: left; }
+        .builder .items-table td { border-top: 1px solid var(--border-color); background: #ffffff; }
+        .builder .items-table tbody tr:nth-child(odd) td { background: #fcfcfd; }
+        .builder .items-table tbody tr:hover td { background: #f6f8fa; }
+        .builder .items-table td:first-child { word-break: break-word; }
+        .builder .items-table input { width: 100%; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem 0.6rem; }
+        .builder .items-table .b_remove { background: transparent; border: 1px solid #e03131; color: #e03131; padding: 0.35rem 0.55rem; border-radius: 8px; cursor: pointer; }
+        .builder .items-table .b_remove:hover { background: #fff5f5; }
+
+        @media (max-width: 640px) {
+            .invoice-container { padding: 1rem; }
+            .invoice-header, .invoice-parties { flex-direction: column; align-items: flex-start; }
+            .builder .grid { grid-template-columns: 1fr; gap: 0.75rem; }
+        }
+        .builder .items-table th, .builder .items-table td { border: 1px solid var(--border-color); padding: 0.5rem; }
+        .builder .actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.75rem; }
+        .builder .actions button { padding: 0.6rem 0.9rem; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
         
         @media print {
-            @page { margin: 1cm; }
+            @page { size: auto; margin: 0; }
             body { background-color: white; }
             .print-button { display: none; }
-            .invoice-container { box-shadow: none; border: none; margin: 0; padding: 0; max-width: 100%; }
+            .builder-toggle, .builder-backdrop { display: none !important; }
+            .invoice-container { box-shadow: none; border: none; margin: 0; padding: 12mm; max-width: 100%; }
             h1, p, th, td, strong, span { color: black !important; }
             .invoice-table thead { background-color: #e9ecef !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
@@ -39,6 +72,100 @@
 <body>
 
     <button class="print-button" onclick="window.print()">Print Invoice</button>
+    <button id="toggleBuilder" class="builder-toggle">Open Parameter Builder</button>
+
+    <div id="builderBackdrop" class="builder-backdrop" aria-hidden="true">
+    <div id="builder" class="builder">
+        <h2>Parameter Builder</h2>
+        <div class="grid">
+            <div>
+                <label for="b_title">Title</label>
+                <input id="b_title" type="text">
+            </div>
+            <div>
+                <label for="b_invoiceNumber">Invoice Number</label>
+                <input id="b_invoiceNumber" type="text">
+            </div>
+            <div>
+                <label for="b_invoiceDate">Invoice Date</label>
+                <input id="b_invoiceDate" type="text" placeholder="YYYY-MM-DD">
+            </div>
+            <div>
+                <label for="b_dueDate">Due Date</label>
+                <input id="b_dueDate" type="text" placeholder="YYYY-MM-DD">
+            </div>
+            <div>
+                <label for="b_fromTitle">From Title</label>
+                <input id="b_fromTitle" type="text">
+            </div>
+            <div>
+                <label for="b_companyName">Company Name</label>
+                <input id="b_companyName" type="text">
+            </div>
+            <div>
+                <label for="b_companyAddress">Company Address</label>
+                <input id="b_companyAddress" type="text">
+            </div>
+            <div>
+                <label for="b_companyPhone">Company Phone</label>
+                <input id="b_companyPhone" type="text">
+            </div>
+            <div>
+                <label for="b_companyEmail">Company Email</label>
+                <input id="b_companyEmail" type="text">
+            </div>
+            <div>
+                <label for="b_clientName">Client Name</label>
+                <input id="b_clientName" type="text">
+            </div>
+            <div>
+                <label for="b_clientAddress">Client Address</label>
+                <input id="b_clientAddress" type="text">
+            </div>
+            <div>
+                <label for="b_clientPhone">Client Phone</label>
+                <input id="b_clientPhone" type="text">
+            </div>
+            <div>
+                <label for="b_clientEmail">Client Email</label>
+                <input id="b_clientEmail" type="text">
+            </div>
+            <div>
+                <label for="b_currencySymbol">Currency Symbol</label>
+                <input id="b_currencySymbol" type="text" placeholder="$">
+            </div>
+            <div>
+                <label for="b_taxRate">Tax Rate (%)</label>
+                <input id="b_taxRate" type="number" step="0.01" min="0" placeholder="0">
+            </div>
+            <div>
+                <label for="b_logoUrl">Logo URL</label>
+                <input id="b_logoUrl" type="text" placeholder="https://...">
+            </div>
+            <div>
+                <label for="b_footerNote">Footer Note</label>
+                <input id="b_footerNote" type="text">
+            </div>
+        </div>
+        <div class="row">
+            <label>Items</label>
+            <table class="items-table">
+                <thead>
+                    <tr><th>Description</th><th style="width:110px;">Qty</th><th style="width:140px;">Rate</th><th style="width:110px; text-align:right;">Actions</th></tr>
+                </thead>
+                <tbody id="b_items"></tbody>
+            </table>
+            <div class="actions">
+                <button id="b_addItem" class="btn-secondary" type="button">Add Item</button>
+            </div>
+        </div>
+        <div class="actions">
+            <button id="b_copyUrl" class="btn-secondary" type="button">Copy URL</button>
+            <button id="b_build" class="btn-primary" type="button">Build & Reload</button>
+            <button id="b_close" class="btn-danger" type="button">Close</button>
+        </div>
+    </div>
+    </div>
 
     <div class="invoice-container">
         <header class="invoice-header">
@@ -207,6 +334,166 @@
             document.getElementById('taxAmount').textContent = `${currency}${taxAmount.toFixed(2)}`;
             document.getElementById('grandTotal').textContent = `${currency}${grandTotal.toFixed(2)}`;
         };
+
+        // Parameter Builder logic (kept separate to not affect existing behavior)
+        (function initBuilder() {
+            const backdrop = document.getElementById('builderBackdrop');
+            const builder = document.getElementById('builder');
+            const toggleBtn = document.getElementById('toggleBuilder');
+            const closeBtn = document.getElementById('b_close');
+            const addItemBtn = document.getElementById('b_addItem');
+            const itemsBody = document.getElementById('b_items');
+            const buildBtn = document.getElementById('b_build');
+            const copyBtn = document.getElementById('b_copyUrl');
+
+            if (!builder || !toggleBtn) return;
+
+            function setVisible(visible) {
+                if (!backdrop) return;
+                backdrop.style.display = visible ? 'flex' : 'none';
+                backdrop.setAttribute('aria-hidden', String(!visible));
+                toggleBtn.textContent = visible ? 'Close Parameter Builder' : 'Open Parameter Builder';
+            }
+
+            function readDomText(id) {
+                const el = document.getElementById(id);
+                return el ? el.textContent || '' : '';
+            }
+
+            function addItemRow(desc = '', qty = '', rate = '') {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="text" value="${desc.replace(/"/g, '&quot;')}"></td>
+                    <td><input type="number" step="1" min="0" value="${qty}"></td>
+                    <td><input type="number" step="0.01" min="0" value="${rate}"></td>
+                    <td><button type="button" class="btn-danger b_remove">Remove</button></td>
+                `;
+                itemsBody.appendChild(tr);
+            }
+
+            function populateFromCurrentView() {
+                // Simple fields
+                document.getElementById('b_title').value = readDomText('invoiceTitle');
+                document.getElementById('b_invoiceNumber').value = readDomText('invoiceNumber');
+                document.getElementById('b_invoiceDate').value = readDomText('invoiceDate');
+                document.getElementById('b_dueDate').value = readDomText('dueDate');
+                document.getElementById('b_fromTitle').value = readDomText('fromTitle');
+                document.getElementById('b_companyName').value = readDomText('companyName');
+                document.getElementById('b_companyAddress').value = readDomText('companyAddress');
+                document.getElementById('b_companyPhone').value = readDomText('companyPhone');
+                document.getElementById('b_companyEmail').value = readDomText('companyEmail');
+                document.getElementById('b_clientName').value = readDomText('clientName');
+                document.getElementById('b_clientAddress').value = readDomText('clientAddress');
+                document.getElementById('b_clientPhone').value = readDomText('clientPhone');
+                document.getElementById('b_clientEmail').value = readDomText('clientEmail');
+                document.getElementById('b_footerNote').value = readDomText('footerNote');
+
+                const params = new URLSearchParams(window.location.search);
+                document.getElementById('b_currencySymbol').value = params.get('currencySymbol') || '$';
+                document.getElementById('b_taxRate').value = params.get('taxRate') || '0';
+                document.getElementById('b_logoUrl').value = params.get('logoUrl') || '';
+
+                // Items: prefer URL items if present, else read from rendered table
+                itemsBody.innerHTML = '';
+                const itemsParam = params.get('items');
+                if (itemsParam) {
+                    try {
+                        const items = JSON.parse(decodeURIComponent(itemsParam));
+                        items.forEach(i => addItemRow(i.desc || '', i.qty ?? '', i.rate ?? ''));
+                    } catch {}
+                } else {
+                    const rendered = document.querySelectorAll('#invoiceItems tr');
+                    if (rendered.length) {
+                        rendered.forEach(tr => {
+                            const tds = tr.querySelectorAll('td');
+                            const desc = tds[0]?.textContent || '';
+                            const qty = tds[1]?.textContent || '';
+                            const rateText = tds[2]?.textContent || '';
+                            const rate = rateText.replace(/^\D+/, '');
+                            addItemRow(desc, qty, rate);
+                        });
+                    }
+                }
+                if (!itemsBody.children.length) addItemRow();
+            }
+
+            function collectParamsFromBuilder() {
+                const get = (id) => document.getElementById(id).value.trim();
+                const params = new URLSearchParams();
+                const assignIf = (key, val) => { if (val !== '') params.set(key, val); };
+
+                assignIf('title', get('b_title'));
+                assignIf('invoiceNumber', get('b_invoiceNumber'));
+                assignIf('invoiceDate', get('b_invoiceDate'));
+                assignIf('dueDate', get('b_dueDate'));
+                assignIf('fromTitle', get('b_fromTitle'));
+                assignIf('companyName', get('b_companyName'));
+                assignIf('companyAddress', get('b_companyAddress'));
+                assignIf('companyPhone', get('b_companyPhone'));
+                assignIf('companyEmail', get('b_companyEmail'));
+                assignIf('clientName', get('b_clientName'));
+                assignIf('clientAddress', get('b_clientAddress'));
+                assignIf('clientPhone', get('b_clientPhone'));
+                assignIf('clientEmail', get('b_clientEmail'));
+                assignIf('currencySymbol', get('b_currencySymbol'));
+                assignIf('taxRate', get('b_taxRate'));
+                assignIf('footerNote', get('b_footerNote'));
+                assignIf('logoUrl', get('b_logoUrl'));
+
+                // Items
+                const itemRows = Array.from(itemsBody.querySelectorAll('tr'));
+                const items = [];
+                itemRows.forEach(tr => {
+                    const [descEl, qtyEl, rateEl] = tr.querySelectorAll('input');
+                    const desc = (descEl?.value || '').trim();
+                    const qty = parseFloat((qtyEl?.value || '').trim());
+                    const rate = parseFloat((rateEl?.value || '').trim());
+                    if (desc || (!Number.isNaN(qty) && !Number.isNaN(rate))) {
+                        items.push({ desc, qty: Number.isNaN(qty) ? 0 : qty, rate: Number.isNaN(rate) ? 0 : rate });
+                    }
+                });
+                if (items.length) {
+                    params.set('items', encodeURIComponent(JSON.stringify(items)));
+                }
+                return params;
+            }
+
+            function buildUrlFromBuilder() {
+                const params = collectParamsFromBuilder();
+                const url = `${location.pathname}?${params.toString()}`;
+                return url;
+            }
+
+            toggleBtn.addEventListener('click', () => {
+                const visible = builder.style.display !== 'block';
+                if (visible) populateFromCurrentView();
+                setVisible(visible);
+            });
+            closeBtn.addEventListener('click', () => setVisible(false));
+            if (backdrop) {
+                backdrop.addEventListener('click', (e) => {
+                    if (e.target === backdrop) setVisible(false);
+                });
+            }
+            addItemBtn.addEventListener('click', () => addItemRow());
+            itemsBody.addEventListener('click', (e) => {
+                const btn = e.target.closest('.b_remove');
+                if (btn) {
+                    const tr = btn.closest('tr');
+                    if (tr) tr.remove();
+                }
+            });
+            buildBtn.addEventListener('click', () => {
+                const url = buildUrlFromBuilder();
+                location.href = url;
+            });
+            copyBtn.addEventListener('click', async () => {
+                const url = buildUrlFromBuilder();
+                try { await navigator.clipboard.writeText(new URL(url, location.origin).toString()); } catch {}
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => { copyBtn.textContent = 'Copy URL'; }, 1200);
+            });
+        })();
     </script>
 </body>
 </html>

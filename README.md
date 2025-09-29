@@ -6,6 +6,7 @@ This project is a single-page invoice template (`index.html`) that reads data fr
 - When the page loads it parses `window.location.search` and fills the invoice fields with any provided values.
 - Line items are supplied as a URL-encoded JSON array and rendered into the invoice table. Subtotal, tax, and grand total are computed automatically.
 - A **Print Invoice** button opens the browser print dialog; the layout includes print-specific styling.
+- A built-in **Parameter Builder** (open via the "Open Parameter Builder" button) lets you enter all fields and line items interactively, then either copy the generated URL or apply it via "Build & Reload" without changing the underlying URL-driven behavior.
 
 ## Parameters
 All parameters are optional; sensible defaults are used when a parameter is missing.
