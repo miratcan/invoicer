@@ -109,6 +109,24 @@
                 document.getElementById(id).textContent = params.get(param) ?? defaultValue;
             }
 
+            // Surface unexpected parameters to help callers debug malformed URLs.
+            const expectedParams = new Set([
+                ...Object.values(textMappings).map(([param]) => param),
+                'currencySymbol',
+                'logoUrl',
+                'items',
+                'taxRate'
+            ]);
+            const unexpectedParams = [];
+            for (const key of params.keys()) {
+                if (!expectedParams.has(key)) {
+                    unexpectedParams.push(key);
+                }
+            }
+            if (unexpectedParams.length) {
+                console.log(`Unexpected invoice parameters: ${unexpectedParams.join(', ')}`);
+            }
+
             // Populate logo
             const logoUrl = params.get('logoUrl');
             if (logoUrl) {
