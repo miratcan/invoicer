@@ -105,8 +105,17 @@
                 'footerNote': ['footerNote', 'Thank you for your business.']
             };
 
+            const fallbackUsed = {};
+
             for (const [id, [param, defaultValue]] of Object.entries(textMappings)) {
-                document.getElementById(id).textContent = params.get(param) ?? defaultValue;
+                const element = document.getElementById(id);
+                const hasParam = params.has(param);
+                const value = hasParam ? params.get(param) : defaultValue;
+                element.textContent = value;
+
+                if (!hasParam) {
+                    fallbackUsed[param] = value === '' ? '(empty string)' : value;
+                }
             }
 
             // Surface unexpected parameters to help callers debug malformed URLs.
@@ -125,27 +134,6 @@
             }
             if (unexpectedParams.length) {
                 console.log(`Unexpected invoice parameters: ${unexpectedParams.join(', ')}`);
-            }
-
-            // Warn if commonly required parameters are missing.
-            const requiredParams = [
-                'title',
-                'invoiceNumber',
-                'invoiceDate',
-                'dueDate',
-                'companyName',
-                'companyAddress',
-                'companyPhone',
-                'companyEmail',
-                'clientName',
-                'clientAddress',
-                'clientPhone',
-                'clientEmail',
-                'items'
-            ];
-            const missingRequired = requiredParams.filter((name) => !params.has(name));
-            if (missingRequired.length) {
-                console.warn(`Missing expected invoice parameters: ${missingRequired.join(', ')}`);
             }
 
             // Populate logo
@@ -179,6 +167,34 @@
                     itemsTbody.innerHTML = `<tr><td colspan="4" style="color:red;">Error parsing items. Check the 'items' parameter.</td></tr>`;
                     console.error("JSON Parse Error:", e);
                 }
+            } else {
+                fallbackUsed.items = '(no line items provided; rendering defaults)';
+            }
+
+            // Warn if commonly required parameters are missing and note the fallback.
+            const requiredParams = [
+                'title',
+                'invoiceNumber',
+                'invoiceDate',
+                'dueDate',
+                'companyName',
+                'companyAddress',
+                'companyPhone',
+                'companyEmail',
+                'clientName',
+                'clientAddress',
+                'clientPhone',
+                'clientEmail',
+                'items'
+            ];
+
+            const missingRequired = requiredParams.filter((name) => !params.has(name) || (name === 'items' && !itemsParam));
+            if (missingRequired.length) {
+                const details = missingRequired.map((name) => {
+                    const fallback = fallbackUsed[name];
+                    return fallback ? `${name} (using default: ${fallback})` : `${name} (no default available)`;
+                });
+                console.warn(`Missing expected invoice parameters; using defaults for ${details.join(', ')}.`);
             }
 
             // Populate totals
